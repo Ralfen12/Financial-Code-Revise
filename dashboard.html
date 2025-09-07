@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2F855A',
+                        'primary-hover': '#276749',
+                        'background-light': '#F7FAF5',
+                        'text-muted': '#718096',
+                        'accent-green': '#68D391',
+                        'surface-white': '#FFFFFF',
+                        'error-red': '#E53E3E',
+                        'summary-brown': '#88BE3C',
+                        'text-dark': '#2D3748',
+                        'info-blue': '#3182CE',
+                        'sidebar-light': '#F0F7F4',
+                        'sidebar-dark': '#2D4A3C',
+                        'sidebar-accent': '#3A6650',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .transition-standard {
+            transition: all 0.3s ease-in-out;
+        }
+        .transition-fast {
+            transition: all 0.2s ease-in-out;
+        }
+        .transition-slow {
+            transition: all 0.5s ease-in-out;
+        }
+        .scale-hover:hover {
+            transform: scale(1.05);
+        }
+        .shadow-hover:hover {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.12);
+        }
+        .opacity-hover:hover {
+            opacity: 0.85;
+        }
+        .sidebar-item.active {
+            background-color: #E8F2EC;
+            border-left: 4px solid #2F855A;
+            color: #2F855A;
+        }
+        .sidebar-item:hover {
+            background-color: #E8F2EC;
+        }
+        .card-shadow {
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.08);
+        }
+        .submenu {
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .rotate-90 {
+            transform: rotate(90deg);
+        }
+        .sidebar-header {
+            background: linear-gradient(135deg, #2D4A3C 0%, #3A6650 100%);
+        }
+        .sidebar-category {
+            background-color: #E8F2EC;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        .sidebar-footer {
+            background-color: #F0F7F4;
+            border-top: 1px solid #E8F2EC;
+        }
+    </style>
+</head>
+<body class="bg-background-light min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gradient-to-b from-sidebar-light to-sidebar-light/80 h-screen flex flex-col border-r border-gray-200/50 shadow-sm">
+        <div class="sidebar-header p-6">
+            <h1 class="text-xl font-bold text-surface-white flex items-center">
+                <i class='bx bx-wallet-alt text-accent-green mr-2'></i>
+                 Dashboard
+            </h1>
+            <p class="text-xs text-accent-green/90 mt-1">Microfinancial Management System 1</p>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="px-4 pb-4 pt-2">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    placeholder="Search..." 
+                    class="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green transition-fast bg-surface-white/80"
+                >
+                <i class='bx bx-search absolute left-3 top-2.5 text-text-muted'></i>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="flex-1 overflow-y-auto px-2">
+            <div class="space-y-1">
+                <div class="sidebar-item py-3 px-4 rounded-lg transition-standard cursor-pointer mb-2 mx-2" id="dashboard-menu">
+                    <div class="flex items-center">
+                        <i class='bx bx-home text-primary mr-3'></i>
+                        <span class="text-sm font-medium text-text-dark">SUB MODULES</span>
+                    </div>
+                </div>
+                
+                <!-- Disbursement Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="disbursement">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Disbursement</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="disbursement"></i>
+                    </div>
+                    <div class="submenu pl-2" id="disbursement-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-total">
+                                <span class="text-sm text-text-dark">Total Funds</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-pending">
+                                <span class="text-sm text-text-dark">Pending Request</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-approved">
+                                <span class="text-sm text-text-dark">Approved and Released</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-notification">
+                                <span class="text-sm text-text-dark">Notification</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- General Ledger Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ledger">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">General Ledger</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ledger"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ledger-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-summary">
+                                <span class="text-sm text-text-dark">Summary</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-transaction">
+                                <span class="text-sm text-text-dark">Transaction</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-income-expenses">
+                                <span class="text-sm text-text-dark">Income vs Expenses</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-report">
+                                <span class="text-sm text-text-dark">Generate financial report</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AR Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ar">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Accounts Receivable</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ar"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ar-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-outstanding">
+                                <span class="text-sm text-text-dark">Outstanding Balance</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-due-dates">
+                                <span class="text-sm text-text-dark">Upcoming Due Dates</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-total">
+                                <span class="text-sm text-text-dark">Total Account Receivable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AP Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ap">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Accounts Payable</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ap"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ap-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-total">
+                                <span class="text-sm text-text-dark">Total Account Payable</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-collection-dates">
+                                <span class="text-sm text-text-dark">Upcoming Collection Dates</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Collection Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="collection">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Collection</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="collection"></i>
+                    </div>
+                    <div class="submenu pl-2" id="collection-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="collection-total">
+                                <span class="text-sm text-text-dark">Total Collection (This Week)</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="collection-assignment">
+                                <span class="text-sm text-text-dark">Collector Assignment</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Budget Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="budget">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Budget Management</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="budget"></i>
+                    </div>
+                    <div class="submenu pl-2" id="budget-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-pie">
+                                <span class="text-sm text-text-dark">Pie Chart</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-vs-spending">
+                                <span class="text-sm text-text-dark">Budget vs Spending</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-approved">
+                                <span class="text-sm text-text-dark">Approved Request</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="sidebar-footer p-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30">
+                    <i class='bx bx-user text-primary'></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-text-dark">Admin User</p>
+                    <p class="text-xs text-primary">Financial Manager</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-text-dark">Financial With Predictive Budgeting And Cash Flow Forecasting Using Time Series Analysis</h1>
+                    <p class="text-sm text-text-muted">Welcome back, here's your financial overview</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button class="p-2 rounded-full bg-surface-white card-shadow opacity-hover" id="notification-btn">
+                            <i class='bx bx-bell text-xl text-text-muted'></i>
+                        </button>
+                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-error-red rounded-full text-xs text-surface-white flex items-center justify-center" id="notification-count">3</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <i class='bx bx-user text-primary'></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-text-muted">Total Balance</p>
+                            <h3 class="text-2xl font-bold text-text-dark mt-1" id="total-balance">₱245,382</h3>
+                            <p class="text-xs text-accent-green mt-1 flex items-center">
+                                <i class='bx bx-up-arrow-alt mr-1'></i> <span id="balance-change"></span>12% From Last Month.
+                            </p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-primary/10">
+                            <i class='bx bx-wallet text-primary text-xl'></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-text-muted">Accounts Receivable</p>
+                            <h3 class="text-2xl font-bold text-text-dark mt-1" id="ar-balance">₱128,450</h3>
+                            <p class="text-xs text-error-red mt-1 flex items-center">
+                                <i class='bx bx-down-arrow-alt mr-1'></i> <span id="ar-change"></span>8% From Last Month.
+                            </p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-summary-brown/10">
+                            <i class='bx bx-credit-card text-summary-brown text-xl'></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-text-muted">Accounts Payable</p>
+                            <h3 class="text-2xl font-bold text-text-dark mt-1" id="ap-balance">₱86,740</h3>
+                            <p class="text-xs text-error-red mt-1 flex items-center">
+                                <i class='bx bx-up-arrow-alt mr-1'></i> <span id="ap-change"></span>5% From Last Month.
+                            </p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-info-blue/10">
+                            <i class='bx bx-money text-info-blue text-xl'></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm text-text-muted">This Month's Profit</p>
+                            <h3 class="text-2xl font-bold text-text-dark mt-1" id="profit-balance">₱62,350</h3>
+                            <p class="text-xs text-accent-green mt-1 flex items-center">
+                                <i class='bx bx-up-arrow-alt mr-1'></i> <span id="profit-change"></span>15% From Last Month.
+                            </p>
+                        </div>
+                        <div class="p-3 rounded-lg bg-accent-green/10">
+                            <i class='bx bx-trending-up text-accent-green text-xl'></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Income vs Expenses Chart -->
+                <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-text-dark">Income vs Expenses</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 rounded-full bg-primary mr-2"></span>
+                                <span class="text-xs text-text-muted">Income</span>
+                            </span>
+                            <span class="flex items-center">
+                                <span class="w-3 h-3 rounded-full bg-summary-brown mr-2"></span>
+                                <span class="text-xs text-text-muted">Expenses</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Budget Distribution Chart -->
+                <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-text-dark">Budget Distribution</h3>
+                        <button class="text-xs text-primary flex items-center opacity-hover" id="refresh-budget">
+                            <i class='bx bx-refresh text-xl'></i>
+                        </button>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="bg-surface-white rounded-xl p-6 card-shadow mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-text-dark">Recent Transactions</h3>
+                    <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-transactions">
+                        View all <i class='bx bx-chevron-right text-xl'></i>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="transactions-table">
+                        <thead>
+                            <tr class="text-left text-sm text-text-muted border-b border-gray-200">
+                                <th class="pb-3">Transaction</th>
+                                <th class="pb-3">Date</th>
+                                <th class="pb-3">Amount</th>
+                                <th class="pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Transactions will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Upcoming Payments -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Upcoming Due Dates -->
+                <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-text-dark">Upcoming Due Dates</h3>
+                        <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-due-dates">
+                            View all <i class='bx bx-chevron-right text-xl'></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4" id="due-dates-list">
+                        <!-- Due dates will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Recent Notifications -->
+                <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-text-dark">Recent Notifications</h3>
+                        <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-notifications">
+                            View all <i class='bx bx-chevron-right text-xl'></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4" id="notifications-list">
+                        <!-- Notifications will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        const transactions = [
+            {
+                name: "Office Supplies",
+                vendor: "SupplyCo",
+                date: "Aug 12, 2023",
+                amount: "₱12,450",
+                status: "Completed",
+                icon: "bx-shopping-bag",
+                color: "primary"
+            },
+            {
+                name: "Office Rent",
+                vendor: "Property: Tower One",
+                date: "Aug 10, 2023",
+                amount: "₱45,000",
+                status: "Completed",
+                icon: "bx-building-house",
+                color: "info-blue"
+            },
+            {
+                name: "Client Payment",
+                vendor: "ABC Corporation",
+                date: "Aug 8, 2023",
+                amount: "₱75,000",
+                status: "Completed",
+                icon: "bx-credit-card",
+                color: "summary-brown"
+            },
+            {
+                name: "Software License",
+                vendor: "TechSoft Inc.",
+                date: "Aug 5, 2023",
+                amount: "₱8,500",
+                status: "Pending",
+                icon: "bx-error-circle",
+                color: "error-red"
+            }
+        ];
+
+        const dueDates = [
+            {
+                name: "Vendor Payment - TechSoft Inc.",
+                days: 3,
+                amount: "₱8,500"
+            },
+            {
+                name: "Utility Bill - Meralco",
+                days: 5,
+                amount: "₱12,340"
+            },
+            {
+                name: "Employee Bonuses",
+                days: 7,
+                amount: "₱65,000"
+            }
+        ];
+
+        const notifications = [
+            {
+                title: "Payment to SupplyCo was successful",
+                time: "2 hours ago",
+                icon: "bx-check-circle",
+                color: "primary"
+            },
+            {
+                title: "New invoice from TechSoft Inc. requires approval",
+                time: "5 hours ago",
+                icon: "bx-info-circle",
+                color: "info-blue"
+            },
+            {
+                title: "Payment received from ABC Corporation",
+                time: "Yesterday",
+                icon: "bx-credit-card",
+                color: "accent-green"
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Populate transactions
+            const transactionsTable = document.getElementById('transactions-table').querySelector('tbody');
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="py-4">
+                        <div class="flex items-center">
+                            <div class="p-2 rounded-lg bg-${transaction.color}/10 mr-3">
+                                <i class='bx ${transaction.icon} text-${transaction.color}'></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-text-dark">${transaction.name}</p>
+                                <p class="text-xs text-text-muted">${transaction.vendor}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 text-sm text-text-dark">${transaction.date}</td>
+                    <td class="py-4 text-sm text-text-dark">${transaction.amount}</td>
+                    <td class="py-4">
+                        <span class="px-2 py-1 text-xs rounded-full bg-${transaction.status === 'Completed' ? 'accent-green' : 'error-red'}/10 text-${transaction.status === 'Completed' ? 'accent-green' : 'error-red'}">${transaction.status}</span>
+                    </td>
+                `;
+                transactionsTable.appendChild(row);
+            });
+
+            // Populate due dates
+            const dueDatesList = document.getElementById('due-dates-list');
+            dueDates.forEach(dueDate => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between';
+                item.innerHTML = `
+                    <div>
+                        <p class="text-sm font-medium text-text-dark">${dueDate.name}</p>
+                        <p class="text-xs text-text-muted">Due in ${dueDate.days} days</p>
+                    </div>
+                    <span class="text-sm font-medium text-text-dark">${dueDate.amount}</span>
+                `;
+                dueDatesList.appendChild(item);
+            });
+
+            // Populate notifications
+            const notificationsList = document.getElementById('notifications-list');
+            notifications.forEach(notification => {
+                const item = document.createElement('div');
+                item.className = 'flex items-start';
+                item.innerHTML = `
+                    <div class="p-2 rounded-full bg-${notification.color}/10 mr-3 mt-1">
+                        <i class='bx ${notification.icon} text-${notification.color}'></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-text-dark">${notification.title}</p>
+                        <p class="text-xs text-text-muted">${notification.time}</p>
+                    </div>
+                `;
+                notificationsList.appendChild(item);
+            });
+
+            // Income vs Expenses Chart
+            const incomeExpenseCtx = document.getElementById('incomeExpenseChart').getContext('2d');
+            const incomeExpenseChart = new Chart(incomeExpenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [120, 150, 180, 90, 135, 160, 200, 220],
+                            backgroundColor: '#2F855A',
+                            borderRadius: 6,
+                        },
+                        {
+                            label: 'Expenses',
+                            data: [80, 100, 120, 70, 110, 130, 150, 160],
+                            backgroundColor: '#88BE3C',
+                            borderRadius: 6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false,
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value + 'K';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            // Budget Distribution Chart
+            const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+            const budgetChart = new Chart(budgetCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Operations', 'Marketing', 'Salaries', 'Rent', 'IT'],
+                    datasets: [{
+                        data: [30, 20, 25, 15, 10],
+                        backgroundColor: [
+                            '#2F855A',
+                            '#88BE3C',
+                            '#68D391',
+                            '#3182CE',
+                            '#E53E3E'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Sidebar category toggle functionality
+            document.querySelectorAll('.sidebar-category').forEach(category => {
+                category.addEventListener('click', function() {
+                    const categoryName = this.getAttribute('data-category');
+                    const submenu = document.getElementById(`${categoryName}-submenu`);
+                    const arrow = document.querySelector(`.category-arrow[data-category="${categoryName}"]`);
+                    
+                    if (submenu.style.maxHeight === '0px' || !submenu.style.maxHeight) {
+                        // Close all other submenus first
+                        document.querySelectorAll('.submenu').forEach(menu => {
+                            if (menu.id !== `${categoryName}-submenu`) {
+                                menu.style.maxHeight = '0px';
+                            }
+                        });
+                        
+                        // Reset all other arrows
+                        document.querySelectorAll('.category-arrow').forEach(arr => {
+                            if (arr !== arrow) {
+                                arr.classList.remove('rotate-90');
+                            }
+                        });
+                        
+                        // Open this submenu
+                        submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                        arrow.classList.add('rotate-90');
+                    } else {
+                        submenu.style.maxHeight = '0px';
+                        arrow.classList.remove('rotate-90');
+                    }
+                });
+            });
+            
+            // Sidebar item click handler
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.sidebar-item').forEach(i => {
+                        i.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Get the page name from data attribute
+                    const pageName = this.getAttribute('data-page');
+                    if (pageName) {
+                        // Update the main header based on the selected page
+                        const mainHeader = document.querySelector('.text-2xl.font-bold');
+                        const subHeader = document.querySelector('.text-sm.text-text-muted');
+                        
+                        // Convert page name to readable format
+                        const pageTitle = pageName.split('-')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                            
+                        mainHeader.textContent = pageTitle;
+                        subHeader.textContent = `Viewing details for ${pageTitle.toLowerCase()}`;
+                    }
+                });
+            });
+            
+            // Refresh budget chart button
+            document.getElementById('refresh-budget').addEventListener('click', function() {
+                // Generate random data for the budget chart
+                const newData = [
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10
+                ];
+                
+                budgetChart.data.datasets[0].data = newData;
+                budgetChart.update();
+                
+                // Show a brief animation on the button
+                this.classList.add('rotate-90');
+                setTimeout(() => {
+                    this.classList.remove('rotate-90');
+                }, 500);
+            });
+            
+            // Notification button
+            document.getElementById('notification-btn').addEventListener('click', function() {
+                // Mark all notifications as read
+                document.getElementById('notification-count').textContent = '0';
+                this.classList.add('opacity-50');
+                
+                // Show a brief confirmation
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="bx bx-check text-xl text-text-muted"></i>';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                }, 1000);
+            });
+            
+            // View all buttons
+            document.getElementById('view-all-transactions').addEventListener('click', function() {
+                alert('Viewing all transactions');
+            });
+            
+            document.getElementById('view-all-due-dates').addEventListener('click', function() {
+                alert('Viewing all due dates');
+            });
+            
+            document.getElementById('view-all-notifications').addEventListener('click', function() {
+                alert('Viewing all notifications');
+            });
+            
+            // Initialize dashboard menu as active
+            document.getElementById('dashboard-menu').classList.add('active');
+        });
+    </script>
+</body>
+</html>
