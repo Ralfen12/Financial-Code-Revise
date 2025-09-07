@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2F855A',
+                        'primary-hover': '#276749',
+                        'background-light': '#F7FAF5',
+                        'text-muted': '#718096',
+                        'accent-green': '#68D391',
+                        'surface-white': '#FFFFFF',
+                        'error-red': '#E53E3E',
+                        'summary-brown': '#88BE3C',
+                        'text-dark': '#2D3748',
+                        'info-blue': '#3182CE',
+                        'sidebar-light': '#F0F7F4',
+                        'sidebar-dark': '#2D4A3C',
+                        'sidebar-accent': '#3A6650',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .transition-standard {
+            transition: all 0.3s ease-in-out;
+        }
+        .transition-fast {
+            transition: all 0.2s ease-in-out;
+        }
+        .transition-slow {
+            transition: all 0.5s ease-in-out;
+        }
+        .scale-hover:hover {
+            transform: scale(1.05);
+        }
+        .shadow-hover:hover {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.12);
+        }
+        .opacity-hover:hover {
+            opacity: 0.85;
+        }
+        .sidebar-item.active {
+            background-color: #E8F2EC;
+            border-left: 4px solid #2F855A;
+            color: #2F855A;
+        }
+        .sidebar-item:hover {
+            background-color: #E8F2EC;
+        }
+        .card-shadow {
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.08);
+        }
+        .submenu {
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .rotate-90 {
+            transform: rotate(90deg);
+        }
+        .sidebar-header {
+            background: linear-gradient(135deg, #2D4A3C 0%, #3A6650 100%);
+        }
+        .sidebar-category {
+            background-color: #E8F2EC;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        .sidebar-footer {
+            background-color: #F0F7F4;
+            border-top: 1px solid #E8F2EC;
+        }
+        .notification-panel {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        .profile-panel {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 250px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        .notification-panel.active,
+        .profile-panel.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .form-input {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            ring: 2px;
+            ring-color: #68D391;
+        }
+        .form-button {
+            background-color: #2F855A;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .form-button:hover {
+            background-color: #276749;
+        }
+        table {
+            width: 100%;
+            background-color: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.08);
+        }
+        th {
+            background-color: #F7FAF5;
+            text-align: left;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #2D3748;
+        }
+        td {
+            padding: 0.75rem;
+            border-top: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+            color: #2D3748;
+        }
+        tr:hover {
+            background-color: #F7FAF5;
+        }
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 9999px;
+        }
+        .status-completed {
+            background-color: rgba(104, 211, 145, 0.1);
+            color: #68D391;
+        }
+        .status-pending {
+            background-color: rgba(229, 62, 62, 0.1);
+            color: #E53E3E;
+        }
+    </style>
+</head>
+<body class="bg-background-light min-h-screen flex">
+    <!-- Sidebar --!>    <div class="w-64 bg-gradient-to-b from-sidebar-light to-sidebar-light/80 h-screen flex flex-col border-r border-gray-200/50 shadow-sm">
+        <div class="sidebar-header p-6">
+            <h1 class="text-xl font-bold text-surface-white flex items-center">
+                <i class='bx bx-wallet-alt text-accent-green mr-2'></i>
+                 Dashboard
+            </h1>
+            <p class="text-xs text-accent-green/90 mt-1">Microfinancial Management System 1</p>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="px-4 pb-4 pt-2">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    placeholder="Search..." 
+                    class="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green transition-fast bg-surface-white/80"
+                    id="sidebar-search"
+                >
+                <i class='bx bx-search absolute left-3 top-2.5 text-text-muted'></i>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="flex-1 overflow-y-auto px-2">
+            <div class="space-y-1">
+                <div class="sidebar-item py-3 px-4 rounded-lg transition-standard cursor-pointer mb-2 mx-2" id="dashboard-menu">
+                    <div class="flex items-center">
+                        <i class='bx bx-home text-primary mr-3'></i>
+                        <span class="text-sm font-medium text-text-dark">FINANCIAL</span>
+                    </div>
+                </div>
+                
+                <!-- Disbursement Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="disbursement">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Disbursement</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="disbursement"></i>
+                    </div>
+                    <div class="submenu pl-2" id="disbursement-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-funds">
+                                <span class="text-sm text-text-dark">Total Funds</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-pending">
+                                <span class="text-sm text-text-dark">Pending Request</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-approved">
+                                <span class="text-sm text-text-dark">Approved and Released</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-salary">
+                                <span class="text-sm text-text-dark">Salary Payments</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="disbursement-methods">
+                                <span class="text-sm text-text-dark">Payment Methods</span>
+                            </div>
+                           
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- General Ledger Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ledger">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">General Ledger</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ledger"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ledger-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-summary">
+                                <span class="text-sm text-text-dark">Summary</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-transaction">
+                                <span class="text-sm text-text-dark">Transaction</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-income-expenses">
+                                <span class="text-sm text-text-dark">Income vs Expenses</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-report">
+                                <span class="text-sm text-text-dark">Generate financial report</span></div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ledger-comparative">
+                                <span class="text-sm text-text-dark">Comparative reports</span>
+                            </div>                        </div>
+                    </div>
+                </div>
+                
+                <!-- AR Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ar">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Accounts Receivable</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ar"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ar-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-outstanding">
+                                <span class="text-sm text-text-dark">Outstanding Balance</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-due-dates">
+                                <span class="text-sm text-text-dark">Upcoming Due Dates</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-total">
+                                <span class="text-sm text-text-dark">Total account receivable</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-payment">
+                                <span class="text-sm text-text-dark">Payment application</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ar-limits">
+                                <span class="text-sm text-text-dark">Credit limits</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AP Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="ap">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Accounts Payable</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="ap"></i>
+                    </div>
+                    <div class="submenu pl-2" id="ap-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-total">
+                                <span class="text-sm text-text-dark">Total account payable</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-collection-dates">
+                                <span class="text-sm text-text-dark">Upcoming collection dates</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-collection-order">
+                                <span class="text-sm text-text-dark">Purchase order matching</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-collection-scheduling">
+                                <span class="text-sm text-text-dark">Payment scheduling</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="ap-collection-payment">
+                                <span class="text-sm text-text-dark">Early payment discounts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Collection Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="collection">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Collection</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="collection"></i>
+                    </div>
+                    <div class="submenu pl-2" id="collection-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="collection-total">
+                                <span class="text-sm text-text-dark">Total Collection (This Week)</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="collection-assignment">
+                                <span class="text-sm text-text-dark">Collector Assignment</span>
+                            </div><div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="collection-receipts">
+                                <span class="text-sm text-text-dark">Receipts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Budget Section -->
+                <div class="py-2 mx-2">
+                    <div class="flex items-center justify-between mb-1 cursor-pointer sidebar-category py-2 px-3" data-category="budget">
+                        <h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Budget Management</h3>
+                        <i class='bx bx-chevron-down text-primary text-sm transition-standard category-arrow' data-category="budget"></i>
+                    </div>
+                    <div class="submenu pl-2" id="budget-submenu" style="max-height: 0px;">
+                        <div class="space-y-1 pl-5">
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-total">
+                                <span class="text-sm text-text-dark">Total Budget</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-vs-spending">
+                                <span class="text-sm text-text-dark">Budget vs Spending</span>
+                            </div>
+                            <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-pie">
+                                <span class="text-sm text-text-dark">Pie Chart</span>
+                            </div> <div class="sidebar-item py-2 px-3 rounded-lg transition-standard cursor-pointer" data-page="budget-approved">
+                                <span class="text-sm text-text-dark">Approved Request</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Removed the User Profile section from sidebar -->
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-text-dark">Financial With Predictive Budgeting And Cash Flow Forecasting Using Time Series Analysis</h1>
+                    <p class="text-sm text-text-muted">Welcome back, here's your financial overview</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button class="p-2 rounded-full bg-surface-white card-shadow opacity-hover" id="notification-btn">
+                            <i class='bx bx-bell text-xl text-text-muted'></i>
+                        </button>
+                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-error-red rounded-full text-xs text-surface-white flex items-center justify-center" id="notification-count">3</span>
+                        
+                        <!-- Notification Panel -->
+                        <div class="notification-panel" id="notification-panel">
+                            <div class="p-4 border-b border-gray-200">
+                                <h3 class="font-semibold text-text-dark">Notifications</h3>
+                            </div>
+                            <div class="max-h-80 overflow-y-auto">
+                                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-start">
+                                        <div class="p-2 rounded-full bg-primary/10 mr-3">
+                                            <i class='bx bx-check-circle text-primary'></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-text-dark">Payment to SupplyCo was successful</p>
+                                            <p class="text-xs text-text-muted">2 hours ago</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-start">
+                                        <div class="p-2 rounded-full bg-info-blue/10 mr-3">
+                                            <i class='bx bx-info-circle text-info-blue'></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-text-dark">New invoice from TechSoft Inc. requires approval</p>
+                                            <p class="text-xs text-text-muted">5 hours ago</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex items-start">
+                                        <div class="p-2 rounded-full bg-accent-green/10 mr-3">
+                                            <i class='bx bx-credit-card text-accent-green'></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-text-dark">Payment received from ABC Corporation</p>
+                                            <p class="text-xs text-text-muted">Yesterday</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3 border-t border-gray-200 text-center">
+                                <button class="text-sm text-primary font-medium" id="mark-all-read">Mark all as read</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center opacity-hover" id="profile-btn">
+                            <i class='bx bx-user text-primary'></i>
+                        </button>
+                        
+                        <!-- Profile Panel -->
+                        <div class="profile-panel" id="profile-panel">
+                            <div class="p-4 border-b border-gray-200 flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30 mr-3">
+                                    <i class='bx bx-user text-primary text-xl'></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-text-dark">Admin User</p>
+                                    <p class="text-xs text-primary">Financial Manager</p>
+                                </div>
+                            </div>
+                            <div class="p-2">
+                                <a href="#" class="flex items-center p-2 text-sm text-text-dark hover:bg-background-light rounded-lg">
+                                    <i class='bx bx-user mr-3'></i> Profile
+                                </a>
+                                <a href="#" class="flex items-center p-2 text-sm text-text-dark hover:bg-background-light rounded-lg">
+                                    <i class='bx bx-cog mr-3'></i> Settings
+                                </a>
+                                <a href="#" class="flex items-center p-2 text-sm text-text-dark hover:bg-background-light rounded-lg">
+                                    <i class='bx bx-credit-card mr-3'></i> Billing
+                                </a>
+                            </div>
+                            <div class="p-3 border-t border-gray-200">
+                                <button class="w-full text-sm text-error-red font-medium flex items-center justify-center" id="logout-btn">
+                                    <i class='bx bx-log-out mr-2'></i> Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Content (Default) -->
+            <section id="dashboard-section" class="space-y-6 mb-8">
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-text-muted">Total Balance</p>
+                                <h3 class="text-2xl font-bold text-text-dark mt-1" id="total-balance">₱245,382</h3>
+                                <p class="text-xs text-accent-green mt-1 flex items-center">
+                                    <i class='bx bx-up-arrow-alt mr-1'></i> 12% From Last Month.
+                                </p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-primary/10">
+                                <i class='bx bx-wallet text-primary text-xl'></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-text-muted">Accounts Receivable</p>
+                                <h3 class="text-2xl font-bold text-text-dark mt-1" id="ar-balance">₱128,450</h3>
+                                <p class="text-xs text-error-red mt-1 flex items-center">
+                                    <i class='bx bx-down-arrow-alt mr-1'></i> 8% From Last Month.
+                                </p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-summary-brown/10">
+                                <i class='bx bx-credit-card text-summary-brown text-xl'></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-text-muted">Accounts Payable</p>
+                                <h3 class="text-2xl font-bold text-text-dark mt-1" id="ap-balance">₱86,740</h3>
+                                <p class="text-xs text-error-red mt-1 flex items-center">
+                                    <i class='bx bx-up-arrow-alt mr-1'></i> 5% From Last Month.
+                                </p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-info-blue/10">
+                                <i class='bx bx-money text-info-blue text-xl'></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow transition-standard scale-hover">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-text-muted">This Month's Profit</p>
+                                <h3 class="text-2xl font-bold text-text-dark mt-1" id="profit-balance">₱62,350</h3>
+                                <p class="text-xs text-accent-green mt-1 flex items-center">
+                                    <i class='bx bx-up-arrow-alt mr-1'></i> 15% From Last Month.
+                                </p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-accent-green/10">
+                                <i class='bx bx-trending-up text-accent-green text-xl'></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Income vs Expenses Chart -->
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-text-dark">Income vs Expenses</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-primary mr-2"></span>
+                                    <span class="text-xs text-text-muted"></span> Income
+                                </span>
+                                <span class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-summary-brown mr-2'></span>
+                                    <span class="text-xs text-text-muted"></span> Expenses
+                                </span>
+                            </div>
+                        </div>
+                        <div class="h-80">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Budget Distribution Chart -->
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-text-dark">Budget Distribution</h3>
+                            <button class="text-xs text-primary flex items-center opacity-hover" id="refresh-budget">
+                                <i class='bx bx-refresh text-xl'></i>
+                            </button>
+                        </div>
+                        <div class="h-80">
+                            <canvas id="budgetChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="bg-surface-white rounded-xl p-6 card-shadow mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-text-dark">Recent Transactions</h3>
+                        <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-transactions">
+                            View all <i class='bx bx-chevron-right text-xl'></i>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="transactions-table">
+                            <thead>
+                                <tr class="text-left text-sm text-text-muted border-b border-gray-200">
+                                    <th class="pb-3">Transaction</th>
+                                    <th class="pb-3">Date</th>
+                                    <th class="pb-3">Amount</th>
+                                    <th class="pb-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Transactions will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Upcoming Payments -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Upcoming Due Dates -->
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-text-dark">Upcoming Due Dates</h3>
+                            <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-due-dates">
+                                View all <i class='bx bx-chevron-right text-xl'></i>
+                            </button>
+                        </div>
+                        <div class="space-y-4" id="due-dates-list">
+                            <!-- Due dates will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Notifications -->
+                    <div class="bg-surface-white rounded-xl p-6 card-shadow">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-text-dark">Recent Notifications</h3>
+                            <button class="text-xs text-primary flex items-center opacity-hover" id="view-all-notifications">
+                                View all <i class='bx bx-chevron-right text-xl'></i>
+                            </button>
+                        </div>
+                        <div class="space-y-4" id="notifications-list">
+                            <!-- Notifications will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Disbursement Section -->
+            <section id="disbursement-section" class="hidden space-y-4 mb-8">
+                <h1 class="text-2xl font-bold text-text-dark">Disbursement</h1>
+                <form id="disbursementForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="disRef" id="disRef" placeholder="Reference No." class="form-input" required>
+                    <input type="text" name="disPayee" id="disPayee" placeholder="Payee" class="form-input" required>
+                    <input type="number" name="disAmount" id="disAmount" placeholder="Amount" class="form-input" required>
+                    <input type="text" name="disPurpose" id="disPurpose" placeholder="Purpose" class="form-input" required>
+                    <button type="submit" class="form-button col-span-1 md:col-span-4">Add Disbursement</button>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ref</th>
+                            <th>Payee</th>
+                            <th>Amount</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="disbursementTable">
+                        <!-- Disbursement data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- General Ledger Section -->
+            <section id="ledger-section" class="hidden space-y-4 mb-8">
+                <h1 class="text-2xl font-bold text-text-dark">General Ledger</h1>
+                <form id="ledgerForm" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <input type="text" name="ledRef" id="ledRef" placeholder="Ref No." class="form-input" required>
+                    <input type="text" name="ledAccount" id="ledAccount" placeholder="Account" class="form-input" required>
+                    <input type="number" name="ledDebit" id="ledDebit" placeholder="Debit" class="form-input">
+                    <input type="number" name="ledCredit" id="ledCredit" placeholder="Credit" class="form-input">
+                    <button type="submit" class="form-button">Add Entry</button>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ref</th>
+                            <th>Account</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Balance</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTable">
+                        <!-- Ledger data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- Accounts Payable/Receivable Section -->
+            <section id="accounts-section" class="hidden space-y-6 mb-8">
+                <h1 class="text-2xl font-bold text-text-dark">Accounts Payable / Receivable</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-text-dark">Accounts Payable</h2>
+                        <form id="payableForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <input type="text" name="payVendor" id="payVendor" placeholder="Vendor" class="form-input" required>
+                            <input type="number" name="payAmount" id="payAmount" placeholder="Amount" class="form-input" required>
+                            <button type="submit" class="form-button">Add Payable</button>
+                        </form>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payableTable">
+                                <!-- Payable data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-text-dark">Accounts Receivable</h2>
+                        <form id="receivableForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <input type="text" name="recClient" id="recClient" placeholder="Client" class="form-input" required>
+                            <input type="number" name="recAmount" id="recAmount" placeholder="Amount" class="form-input" required>
+                            <button type="submit" class="form-button">Add Receivable</button>
+                        </form>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receivableTable">
+                                <!-- Receivable data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Collection Section -->
+            <section id="collection-section" class="hidden space-y-4 mb-8">
+                <h1 class="text-2xl font-bold text-text-dark">Collection</h1>
+                <form id="collectionForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" name="colClient" id="colClient" placeholder="Client" class="form-input" required>
+                    <input type="number" name="colAmount" id="colAmount" placeholder="Amount" class="form-input" required>
+                    <button type="submit" class="form-button">Add Collection</button>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Amount</th>
+                            <th>Collected Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collectionTable">
+                        <!-- Collection data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- Budget Management Section -->
+            <section id="budget-section" class="hidden space-y-4 mb-8">
+                <h1 class="text-2xl font-bold text-text-dark">Budget Management</h1>
+                <form id="budgetForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="budCategory" id="budCategory" placeholder="Category" class="form-input" required>
+                    <input type="number" name="budAmount" id="budAmount" placeholder="Planned Amount" class="form-input" required>
+                    <input type="text" name="budPeriod" id="budPeriod" placeholder="Period" class="form-input" required>
+                    <button type="submit" class="form-button">Add Budget</button>
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Planned</th>
+                            <th>Actual</th>
+                            <th>Variance</th>
+                            <th>Period</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="budgetTable">
+                        <!-- Budget data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Global data storage
+        const financialData = {
+            totalBalance: 245382,
+            accountsReceivable: 128450,
+            accountsPayable: 86740,
+            profit: 62350,
+            disbursements: [
+                { date: "2023-08-15", ref: "DIS001", payee: "SupplyCo", amount: 12450, purpose: "Office Supplies", status: "Completed" },
+                { date: "2023-08-10", ref: "DIS002", payee: "Property: Tower One", amount: 45000, purpose: "Office Rent", status: "Pending" }
+            ],
+            ledger: [
+                { date: "2023-08-15", ref: "LED001", account: "Office Supplies", debit: 12450, credit: 0, balance: 12450 },
+                { date: "2023-08-10", ref: "LED002", account: "Office Rent", debit: 45000, credit: 0, balance: 57450 }
+            ],
+            payables: [
+                { vendor: "TechSoft Inc.", amount: 8500, status: "Pending" },
+                { vendor: "Meralco", amount: 12340, status: "Pending" }
+            ],
+            receivables: [
+                { client: "ABC Corporation", amount: 75000, status: "Completed" },
+                { client: "XYZ Enterprises", amount: 45000, status: "Pending" }
+            ],
+            collections: [
+                { date: "2023-08-15", client: "ABC Corporation", amount: 75000, collectedDate: "2023-08-15" },
+                { date: "2023-08-10", client: "XYZ Enterprises", amount: 45000, collectedDate: "Pending" }
+            ],
+            budgets: [
+                { date: "2023-08-01", category: "Operations", planned: 30000, actual: 28500, variance: 1500, period: "Monthly" },
+                { date: "2023-08-01", category: "Marketing", planned: 20000, actual: 22000, variance: -2000, period: "Monthly" }
+            ]
+        };
+
+        // Sample data for dashboard
+        const transactions = [
+            {
+                name: "Office Supplies",
+                vendor: "SupplyCo",
+                date: "Aug 12, 2023",
+                amount: "₱12,450",
+                status: "Completed",
+                icon: "bx-shopping-bag",
+                color: "primary"
+            },
+            {
+                name: "Office Rent",
+                vendor: "Property: Tower One",
+                date: "Aug 10, 2023",
+                amount: "₱45,000",
+                status: "Completed",
+                icon: "bx-building-house",
+                color: "info-blue"
+            },
+            {
+                name: "Client Payment",
+                vendor: "ABC Corporation",
+                date: "Aug 8, 2023",
+                amount: "₱75,000",
+                status: "Completed",
+                icon: "bx-credit-card",
+                color: "summary-brown"
+            },
+            {
+                name: "Software License",
+                vendor: "TechSoft Inc.",
+                date: "Aug 5, 2023",
+                amount: "₱8,500",
+                status: "Pending",
+                icon: "bx-error-circle",
+                color: "error-red"
+            }
+        ];
+
+        const dueDates = [
+            {
+                name: "Vendor Payment - TechSoft Inc.",
+                days: 3,
+                amount: "₱8,500"
+            },
+            {
+                name: "Utility Bill - Meralco",
+                days: 5,
+                amount: "₱12,340"
+            },
+            {
+                name: "Employee Bonuses",
+                days: 7,
+                amount: "₱65,000"
+            }
+        ];
+
+        const notifications = [
+            {
+                title: "Payment to SupplyCo was successful",
+                time: "2 hours ago",
+                icon: "bx-check-circle",
+                color: "primary"
+            },
+            {
+                title: "New invoice from TechSoft Inc. requires approval",
+                time: "5 hours ago",
+                icon: "bx-info-circle",
+                color: "info-blue"
+            },
+            {
+                title: "Payment received from ABC Corporation",
+                time: "Yesterday",
+                icon: "bx-credit-card",
+                color: "accent-green"
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dashboard
+            updateDashboardStats();
+            populateDashboard();
+            
+            // Populate form tables
+            populateTable('disbursementTable', financialData.disbursements, ['date', 'ref', 'payee', 'amount', 'purpose', 'status']);
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            populateTable('payableTable', financialData.payables, ['vendor', 'amount', 'status']);
+            populateTable('receivableTable', financialData.receivables, ['client', 'amount', 'status']);
+            populateTable('collectionTable', financialData.collections, ['date', 'client', 'amount', 'collectedDate']);
+            populateTable('budgetTable', financialData.budgets, ['date', 'category', 'planned', 'actual', 'variance', 'period']);
+
+            // Income vs Expenses Chart
+            const incomeExpenseCtx = document.getElementById('incomeExpenseChart').getContext('2d');
+            const incomeExpenseChart = new Chart(incomeExpenseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [120, 150, 180, 90, 135, 160, 200, 220],
+                            backgroundColor: '#2F855A',
+                            borderRadius: 6,
+                        },
+                        {
+                            label: 'Expenses',
+                            data: [80, 100, 120, 70, 110, 130, 150, 160],
+                            backgroundColor: '#88BE3C',
+                            borderRadius: 6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false,
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value + 'K';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            // Budget Distribution Chart
+            const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+            const budgetChart = new Chart(budgetCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Operations', 'Marketing', 'Salaries', 'Rent', 'IT'],
+                    datasets: [{
+                        data: [30, 20, 25, 15, 10],
+                        backgroundColor: [
+                            '#2F855A',
+                            '#88BE3C',
+                            '#68D391',
+                            '#3182CE',
+                            '#E53E3E'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Sidebar category toggle functionality
+            document.querySelectorAll('.sidebar-category').forEach(category => {
+                category.addEventListener('click', function() {
+                    const categoryName = this.getAttribute('data-category');
+                    const submenu = document.getElementById(`${categoryName}-submenu`);
+                    const arrow = document.querySelector(`.category-arrow[data-category="${categoryName}"]`);
+                    
+                    if (submenu.style.maxHeight === '0px' || !submenu.style.maxHeight) {
+                        // Close all other submenus first
+                        document.querySelectorAll('.submenu').forEach(menu => {
+                            if (menu.id !== `${categoryName}-submenu`) {
+                                menu.style.maxHeight = '0px';
+                            }
+                        });
+                        
+                        // Reset all other arrows
+                        document.querySelectorAll('.category-arrow').forEach(arr => {
+                            if (arr !== arrow) {
+                                arr.classList.remove('rotate-90');
+                            }
+                        });
+                        
+                        // Open this submenu
+                        submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                        arrow.classList.add('rotate-90');
+                    } else {
+                        submenu.style.maxHeight = '0px';
+                        arrow.classList.remove('rotate-90');
+                    }
+                });
+            });
+            
+            // Sidebar item click handler
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.sidebar-item').forEach(i => {
+                        i.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Hide all sections first
+                    document.querySelectorAll('section').forEach(section => {
+                        section.classList.add('hidden');
+                    });
+                    
+                    // Get the page name from data attribute
+                    const pageName = this.getAttribute('data-page');
+                    if (pageName) {
+                        // Show the corresponding section
+                        if (pageName.includes('disbursement')) {
+                            document.getElementById('disbursement-section').classList.remove('hidden');
+                        } else if (pageName.includes('ledger')) {
+                            document.getElementById('ledger-section').classList.remove('hidden');
+                        } else if (pageName.includes('ar') || pageName.includes('ap')) {
+                            document.getElementById('accounts-section').classList.remove('hidden');
+                        } else if (pageName.includes('collection')) {
+                            document.getElementById('collection-section').classList.remove('hidden');
+                        } else if (pageName.includes('budget')) {
+                            document.getElementById('budget-section').classList.remove('hidden');
+                        }
+                        
+                        // Update the main header based on the selected page
+                        const mainHeader = document.querySelector('.text-2xl.font-bold');
+                        const subHeader = document.querySelector('.text-sm.text-text-muted');
+                        
+                        // Convert page name to readable format
+                        const pageTitle = pageName.split('-')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                            
+                        mainHeader.textContent = pageTitle;
+                        subHeader.textContent = `Viewing details for ${pageTitle.toLowerCase()}`;
+                    } else {
+                        // Show dashboard if no specific page
+                        document.getElementById('dashboard-section').classList.remove('hidden');
+                        const mainHeader = document.querySelector('.text-2xl.font-bold');
+                        const subHeader = document.querySelector('.text-sm.text-text-muted');
+                        mainHeader.textContent = "Financial With Predictive Budgeting And Cash Flow Forecasting Using Time Series Analysis";
+                        subHeader.textContent = "Welcome back, here's your financial overview";
+                    }
+                });
+            });
+            
+            // Form submission handlers
+            document.getElementById('disbursementForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleDisbursementSubmit(this);
+            });
+            
+            document.getElementById('ledgerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLedgerSubmit(this);
+            });
+            
+            document.getElementById('payableForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handlePayableSubmit(this);
+            });
+            
+            document.getElementById('receivableForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleReceivableSubmit(this);
+            });
+            
+            document.getElementById('collectionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleCollectionSubmit(this);
+            });
+            
+            document.getElementById('budgetForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleBudgetSubmit(this);
+            });
+            
+            // Refresh budget chart button
+            document.getElementById('refresh-budget').addEventListener('click', function() {
+                // Generate random data for the budget chart
+                const newData = [
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10,
+                    Math.floor(Math.random() * 30) + 10
+                ];
+                
+                budgetChart.data.datasets[0].data = newData;
+                budgetChart.update();
+                
+                // Show a brief animation on the button
+                this.classList.add('rotate-90');
+                setTimeout(() => {
+                    this.classList.remove('rotate-90');
+                }, 500);
+            });
+            
+            // Notification button
+            const notificationBtn = document.getElementById('notification-btn');
+            const notificationPanel = document.getElementById('notification-panel');
+            const markAllReadBtn = document.getElementById('mark-all-read');
+            
+            notificationBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationPanel.classList.toggle('active');
+                // Hide profile panel if open
+                document.getElementById('profile-panel').classList.remove('active');
+            });
+            
+            markAllReadBtn.addEventListener('click', function() {
+                document.getElementById('notification-count').textContent = '0';
+                notificationBtn.classList.add('opacity-50');
+                notificationPanel.classList.remove('active');
+            });
+            
+            // Profile button
+            const profileBtn = document.getElementById('profile-btn');
+            const profilePanel = document.getElementById('profile-panel');
+            
+            profileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profilePanel.classList.toggle('active');
+                // Hide notification panel if open
+                notificationPanel.classList.remove('active');
+            });
+            
+            // Logout button
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to logout?')) {
+                    alert('Logout successful!');
+                    profilePanel.classList.remove('active');
+                }
+            });
+            
+            // Close panels when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!notificationPanel.contains(e.target) && e.target !== notificationBtn) {
+                    notificationPanel.classList.remove('active');
+                }
+                if (!profilePanel.contains(e.target) && e.target !== profileBtn) {
+                    profilePanel.classList.remove('active');
+                }
+            });
+            
+            // View all buttons
+            document.getElementById('view-all-transactions').addEventListener('click', function() {
+                alert('Viewing all transactions');
+            });
+            
+            document.getElementById('view-all-due-dates').addEventListener('click', function() {
+                alert('Viewing all due dates');
+            });
+            
+            document.getElementById('view-all-notifications').addEventListener('click', function() {
+                alert('Viewing all notifications');
+            });
+            
+            // Search functionality
+            const searchInput = document.getElementById('sidebar-search');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                if (searchTerm.length > 2) {
+                    // Search through all menu items
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.backgroundColor = '#E8F2EC';
+                            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            item.style.backgroundColor = '';
+                        }
+                    });
+                } else {
+                    // Reset all items
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.style.backgroundColor = '';
+                    });
+                }
+            });
+            
+            // Initialize dashboard menu as active
+            document.getElementById('dashboard-menu').classList.add('active');
+        });
+
+        // Function to update dashboard stats
+        function updateDashboardStats() {
+            document.getElementById('total-balance').textContent = `₱${financialData.totalBalance.toLocaleString()}`;
+            document.getElementById('ar-balance').textContent = `₱${financialData.accountsReceivable.toLocaleString()}`;
+            document.getElementById('ap-balance').textContent = `₱${financialData.accountsPayable.toLocaleString()}`;
+            document.getElementById('profit-balance').textContent = `₱${financialData.profit.toLocaleString()}`;
+        }
+
+        // Function to populate dashboard
+        function populateDashboard() {
+            // Populate transactions
+            const transactionsTable = document.getElementById('transactions-table').querySelector('tbody');
+            transactionsTable.innerHTML = '';
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="py-4">
+                        <div class="flex items-center">
+                            <div class="p-2 rounded-lg bg-${transaction.color}/10 mr-3">
+                                <i class='bx ${transaction.icon} text-${transaction.color}'></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-text-dark">${transaction.name}</p>
+                                <p class="text-xs text-text-muted">${transaction.vendor}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 text-sm text-text-dark">${transaction.date}</td>
+                    <td class="py-4 text-sm text-text-dark">${transaction.amount}</td>
+                    <td class="py-4">
+                        <span class="px-2 py-1 text-xs rounded-full bg-${transaction.status === 'Completed' ? 'accent-green' : 'error-red'}/10 text-${transaction.status === 'Completed' ? 'accent-green' : 'error-red'}">${transaction.status}</span>
+                    </td>
+                `;
+                transactionsTable.appendChild(row);
+            });
+
+            // Populate due dates
+            const dueDatesList = document.getElementById('due-dates-list');
+            dueDatesList.innerHTML = '';
+            dueDates.forEach(dueDate => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between';
+                item.innerHTML = `
+                    <div>
+                        <p class="text-sm font-medium text-text-dark">${dueDate.name}</p>
+                        <p class="text-xs text-text-muted">Due in ${dueDate.days} days</p>
+                    </div>
+                    <span class="text-sm font-medium text-text-dark">${dueDate.amount}</span>
+                `;
+                dueDatesList.appendChild(item);
+            });
+
+            // Populate notifications
+            const notificationsList = document.getElementById('notifications-list');
+            notificationsList.innerHTML = '';
+            notifications.forEach(notification => {
+                const item = document.createElement('div');
+                item.className = 'flex items-start';
+                item.innerHTML = `
+                    <div class="p-2 rounded-full bg-${notification.color}/10 mr-3 mt-1">
+                        <i class='bx ${notification.icon} text-${notification.color}'></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-text-dark">${notification.title}</p>
+                        <p class="text-xs text-text-muted">${notification.time}</p>
+                    </div>
+                `;
+                notificationsList.appendChild(item);
+            });
+        }
+
+        // Function to populate tables with data
+        function populateTable(tableId, data, fields) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                fields.forEach(field => {
+                    const cell = document.createElement('td');
+                    
+                    // Format values with currency symbol if they're numbers
+                    if (typeof item[field] === 'number') {
+                        cell.textContent = '₱' + item[field].toLocaleString();
+                    } else {
+                        cell.textContent = item[field] || '';
+                    }
+                    
+                    // Add status badge styling
+                    if (field === 'status') {
+                        cell.className = 'status-badge ' + (item[field] === 'Completed' ? 'status-completed' : 'status-pending');
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                // Add action buttons
+                const actionCell = document.createElement('td');
+                actionCell.innerHTML = `
+                    <button class="text-primary hover:text-primary-hover mr-2" onclick="editRow(this)">
+                        <i class='bx bx-edit'></i>
+                    </button>
+                    <button class="text-error-red hover:text-error-red/80" onclick="deleteRow(this)">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                `;
+                row.appendChild(actionCell);
+                
+                table.appendChild(row);
+            });
+        }
+
+        // Form submission handlers
+        function handleDisbursementSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                date: new Date().toISOString().split('T')[0],
+                ref: formData.get('disRef'),
+                payee: formData.get('disPayee'),
+                amount: parseFloat(formData.get('disAmount')),
+                purpose: formData.get('disPurpose'),
+                status: 'Pending'
+            };
+            
+            // Add to data array
+            financialData.disbursements.push(newItem);
+            
+            // Update accounts payable
+            financialData.accountsPayable += newItem.amount;
+            
+            // Add to ledger
+            financialData.ledger.push({
+                date: newItem.date,
+                ref: newItem.ref,
+                account: `Disbursement: ${newItem.purpose}`,
+                debit: newItem.amount,
+                credit: 0,
+                balance: financialData.ledger.reduce((sum, item) => sum + item.debit - item.credit, 0) + newItem.amount
+            });
+            
+            // Repopulate tables
+            populateTable('disbursementTable', financialData.disbursements, ['date', 'ref', 'payee', 'amount', 'purpose', 'status']);
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            
+            // Update dashboard stats
+            updateDashboardStats();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Disbursement added successfully!');
+        }
+
+        function handleLedgerSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                date: new Date().toISOString().split('T')[0],
+                ref: formData.get('ledRef'),
+                account: formData.get('ledAccount'),
+                debit: parseFloat(formData.get('ledDebit') || 0),
+                credit: parseFloat(formData.get('ledCredit') || 0),
+                balance: 0
+            };
+            
+            // Calculate new balance
+            const previousBalance = financialData.ledger.length > 0 
+                ? financialData.ledger[financialData.ledger.length - 1].balance 
+                : 0;
+            newItem.balance = previousBalance + newItem.debit - newItem.credit;
+            
+            // Add to data array
+            financialData.ledger.push(newItem);
+            
+            // Update financial data based on ledger entry
+            if (newItem.debit > 0) {
+                financialData.totalBalance += newItem.debit;
+            } else if (newItem.credit > 0) {
+                financialData.totalBalance -= newItem.credit;
+            }
+            
+            // Repopulate table
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            
+            // Update dashboard stats
+            updateDashboardStats();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Ledger entry added successfully!');
+        }
+
+        function handlePayableSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                vendor: formData.get('payVendor'),
+                amount: parseFloat(formData.get('payAmount')),
+                status: 'Pending'
+            };
+            
+            // Add to data array
+            financialData.payables.push(newItem);
+            
+            // Update accounts payable
+            financialData.accountsPayable += newItem.amount;
+            
+            // Add to ledger
+            financialData.ledger.push({
+                date: new Date().toISOString().split('T')[0],
+                ref: 'AP' + Math.floor(Math.random() * 1000),
+                account: `Accounts Payable: ${newItem.vendor}`,
+                debit: 0,
+                credit: newItem.amount,
+                balance: financialData.ledger.reduce((sum, item) => sum + item.debit - item.credit, 0) - newItem.amount
+            });
+            
+            // Repopulate tables
+            populateTable('payableTable', financialData.payables, ['vendor', 'amount', 'status']);
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            
+            // Update dashboard stats
+            updateDashboardStats();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Payable added successfully!');
+        }
+
+        function handleReceivableSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                client: formData.get('recClient'),
+                amount: parseFloat(formData.get('recAmount')),
+                status: 'Pending'
+            };
+            
+            // Add to data array
+            financialData.receivables.push(newItem);
+            
+            // Update accounts receivable
+            financialData.accountsReceivable += newItem.amount;
+            
+            // Add to ledger
+            financialData.ledger.push({
+                date: new Date().toISOString().split('T')[0],
+                ref: 'AR' + Math.floor(Math.random() * 1000),
+                account: `Accounts Receivable: ${newItem.client}`,
+                debit: newItem.amount,
+                credit: 0,
+                balance: financialData.ledger.reduce((sum, item) => sum + item.debit - item.credit, 0) + newItem.amount
+            });
+            
+            // Repopulate tables
+            populateTable('receivableTable', financialData.receivables, ['client', 'amount', 'status']);
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            
+            // Update dashboard stats
+            updateDashboardStats();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Receivable added successfully!');
+        }
+
+        function handleCollectionSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                date: new Date().toISOString().split('T')[0],
+                client: formData.get('colClient'),
+                amount: parseFloat(formData.get('colAmount')),
+                collectedDate: new Date().toISOString().split('T')[0]
+            };
+            
+            // Add to data array
+            financialData.collections.push(newItem);
+            
+            // Update accounts receivable and total balance
+            financialData.accountsReceivable -= newItem.amount;
+            financialData.totalBalance += newItem.amount;
+            
+            // Add to ledger
+            financialData.ledger.push({
+                date: newItem.date,
+                ref: 'COL' + Math.floor(Math.random() * 1000),
+                account: `Collection: ${newItem.client}`,
+                debit: newItem.amount,
+                credit: 0,
+                balance: financialData.ledger.reduce((sum, item) => sum + item.debit - item.credit, 0) + newItem.amount
+            });
+            
+            // Update receivables status
+            const receivable = financialData.receivables.find(r => r.client === newItem.client);
+            if (receivable) {
+                receivable.status = 'Completed';
+            }
+            
+            // Repopulate tables
+            populateTable('collectionTable', financialData.collections, ['date', 'client', 'amount', 'collectedDate']);
+            populateTable('receivableTable', financialData.receivables, ['client', 'amount', 'status']);
+            populateTable('ledgerTable', financialData.ledger, ['date', 'ref', 'account', 'debit', 'credit', 'balance']);
+            
+            // Update dashboard stats
+            updateDashboardStats();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Collection added successfully!');
+        }
+
+        function handleBudgetSubmit(form) {
+            const formData = new FormData(form);
+            const newItem = {
+                date: new Date().toISOString().split('T')[0],
+                category: formData.get('budCategory'),
+                planned: parseFloat(formData.get('budAmount')),
+                actual: 0,
+                variance: parseFloat(formData.get('budAmount')),
+                period: formData.get('budPeriod')
+            };
+            
+            // Add to data array
+            financialData.budgets.push(newItem);
+            
+            // Repopulate table
+            populateTable('budgetTable', financialData.budgets, ['date', 'category', 'planned', 'actual', 'variance', 'period']);
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('Budget added successfully!');
+        }
+
+        // Function to edit a row
+        function editRow(button) {
+            const row = button.closest('tr');
+            const cells = row.querySelectorAll('td');
+            
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) { // Skip action cell
+                    const currentValue = cell.textContent;
+                    cell.innerHTML = `<input type="text" value="${currentValue}" class="form-input">`;
+                }
+            });
+            
+            // Change buttons to save/cancel
+            const actionCell = cells[cells.length - 1];
+            actionCell.innerHTML = `
+                <button class="text-accent-green hover:text-accent-green/80 mr-2" onclick="saveRow(this)">
+                    <i class='bx bx-check'></i>
+                </button>
+                <button class="text-error-red hover:text-error-red/80" onclick="cancelEdit(this)">
+                    <i class='bx bx-x'></i>
+                </button>
+            `;
+        }
+
+        // Function to save edited row
+        function saveRow(button) {
+            const row = button.closest('tr');
+            const cells = row.querySelectorAll('td');
+            const newValues = [];
+            
+            cells.forEach((cell, index) => {
+                if (index < cells.length - 1) { // Skip action cell
+                    const input = cell.querySelector('input');
+                    newValues.push(input.value);
+                    cell.textContent = input.value;
+                }
+            });
+            
+            // Restore action buttons
+            const actionCell = cells[cells.length - 1];
+            actionCell.innerHTML = `
+                <button class="text-primary hover:text-primary-hover mr-2" onclick="editRow(this)">
+                    <i class='bx bx-edit'></i>
+                </button>
+                <button class="text-error-red hover:text-error-red/80" onclick="deleteRow(this)">
+                    <i class='bx bx-trash'></i>
+                </button>
+            `;
+            
+            // Show success message
+            alert('Record updated successfully!');
+        }
+
+        // Function to cancel edit
+        function cancelEdit(button) {
+            const row = button.closest('tr');
+            const cells = row.querySelectorAll('td');
+            
+            // Just restore action buttons without saving changes
+            const actionCell = cells[cells.length - 1];
+            actionCell.innerHTML = `
+                <button class="text-primary hover:text-primary-hover mr-2" onclick="editRow(this)">
+                    <i class='bx bx-edit'></i>
+                </button>
+                <button class="text-error-red hover:text-error-red/80" onclick="deleteRow(this)">
+                    <i class='bx bx-trash'></i>
+                </button>
+            `;
+            
+            // Reload the table to discard changes
+            location.reload();
+        }
+
+        // Function to delete a row
+        function deleteRow(button) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                const row = button.closest('tr');
+                row.remove();
+                alert('Record deleted successfully!');
+            }
+        }
+    </script>
+</body>
+</html>
